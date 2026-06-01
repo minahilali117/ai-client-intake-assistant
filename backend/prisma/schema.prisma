@@ -13,15 +13,134 @@ enum UserRole {
   DEVELOPER
 }
 
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL_SENT
+  WON
+  LOST
+}
+
+enum ProjectType {
+  WEB_APP
+  MOBILE_APP
+  SAAS
+  AI_INTEGRATION
+  CLOUD
+  MVP
+  OTHER
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ActivityAction {
+  LEAD_CREATED
+  LEAD_UPDATED
+  LEAD_STATUS_CHANGED
+  INQUIRY_CREATED
+  TECHNICAL_NOTE_ADDED
+  PROPOSAL_GENERATED
+  PROPOSAL_EDITED
+}
+
 model User {
-  id               String   @id @default(uuid())
+  id               String         @id @default(uuid())
   name             String
-  email            String   @unique
-  passwordHash     String   @map("password_hash")
-  role             UserRole @default(SALES)
-  refreshTokenHash String?  @map("refresh_token_hash")
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
+  email            String         @unique
+  passwordHash     String         @map("password_hash")
+  role             UserRole       @default(SALES)
+  refreshTokenHash String?        @map("refresh_token_hash")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+  leads            Lead[]
+  activityLogs     ActivityLog[]
 
   @@map("users")
+}
+
+model Lead {
+  id            String     @id @default(uuid())
+  companyName   String     @map("company_name")
+  contactPerson String     @map("contact_person")
+  email         String
+  phone         String?
+  source        String
+  status        LeadStatus @default(NEW)
+  createdById   String     @map("created_by_id")
+  createdBy     User       @relation(fields: [createdById], references: [id])
+  inquiries     Inquiry[]
+  proposals     Proposal[] @relation("LeadProposals")
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+  deletedAt     DateTime?  @map("deleted_at")
+
+  @@index([status])
+  @@index([companyName])
+  @@index([deletedAt])
+  @@map("leads")
+}
+
+model Inquiry {
+  id               String      @id @default(uuid())
+  leadId           String      @map("lead_id")
+  lead             Lead        @relation(fields: [leadId], references: [id])
+  projectTitle     String      @map("project_title")
+  description      String
+  projectType      ProjectType @map("project_type")
+  budgetRange      String      @map("budget_range")
+  expectedTimeline String      @map("expected_timeline")
+  priority         Priority    @default(MEDIUM)
+  technicalNotes   String?     @map("technical_notes")
+  proposal         Proposal?
+  createdAt        DateTime    @default(now()) @map("created_at")
+  updatedAt        DateTime    @updatedAt @map("updated_at")
+  deletedAt        DateTime?   @map("deleted_at")
+
+  @@index([leadId])
+  @@index([projectType])
+  @@index([deletedAt])
+  @@map("inquiries")
+}
+
+model Proposal {
+  id                  String   @id @default(uuid())
+  inquiryId           String   @unique @map("inquiry_id")
+  inquiry             Inquiry  @relation(fields: [inquiryId], references: [id])
+  leadId              String   @map("lead_id")
+  lead                Lead     @relation("LeadProposals", fields: [leadId], references: [id])
+  projectSummary      String   @map("project_summary")
+  suggestedFeatures   String   @map("suggested_features")
+  technicalApproach   String   @map("technical_approach")
+  estimatedComplexity String   @map("estimated_complexity")
+  suggestedTimeline   String   @map("suggested_timeline")
+  questionsToAsk      String   @map("questions_to_ask")
+  generatedByAI       Boolean  @default(false) @map("generated_by_ai")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+  deletedAt           DateTime? @map("deleted_at")
+
+  @@index([leadId])
+  @@index([deletedAt])
+  @@map("proposals")
+}
+
+model ActivityLog {
+  id         String         @id @default(uuid())
+  userId     String         @map("user_id")
+  user       User           @relation(fields: [userId], references: [id])
+  action     ActivityAction
+  entityType String         @map("entity_type")
+  entityId   String         @map("entity_id")
+  metadata   Json           @default("{}")
+  createdAt  DateTime       @default(now()) @map("created_at")
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("activity_logs")
 }

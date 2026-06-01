@@ -2,16 +2,19 @@
 
 Internal tool for managing client/project inquiries and generating proposal-style project briefs. Built with Next.js 15, NestJS, PostgreSQL, Prisma, and Docker.
 
-## Phase 1 (current)
+## Phase 1
 
-- Monorepo with Next.js frontend and NestJS API
-- PostgreSQL + Prisma (`User`, `UserRole`)
-- JWT access + refresh tokens (bcrypt-hashed refresh tokens in DB)
-- Auth.js (NextAuth v5) on the frontend with httpOnly session cookies
-- RBAC foundation: `ADMIN`, `SALES`, `DEVELOPER`
-- Swagger at `/api/docs`
-- Docker Compose for local/production-style runs
-- Seed users for all three roles
+- Authentication (JWT + Auth.js), RBAC foundation, Docker, Swagger
+
+## Phase 2
+
+- Leads, inquiries, activity logging, CRM UI
+
+## Phase 3 (current)
+
+- AI proposal generation (OpenAI or mock fallback)
+- Proposal view/edit/save workflow
+- Dashboard analytics (cards, charts, recent activity)
 
 ## Tech stack
 
@@ -68,11 +71,13 @@ docker compose up postgres -d
 
 ```bash
 cd backend
-cp ../.env .env   # or symlink DATABASE_URL and secrets
+# backend/.env must exist (copy from repo root .env or backend/.env.example)
 npx prisma migrate deploy
 npx prisma db seed
 npm run dev
 ```
+
+The API must be running on port **3001** before you log in from the frontend.
 
 API: `http://localhost:3001`  
 Swagger: `http://localhost:3001/api/docs`
@@ -81,10 +86,13 @@ Swagger: `http://localhost:3001/api/docs`
 
 ```bash
 cd frontend
+cp .env.local.example .env.local   # required: AUTH_SECRET / NEXTAUTH_SECRET
 npm run dev
 ```
 
 App: `http://localhost:3000`
+
+> Auth.js requires `AUTH_SECRET` or `NEXTAUTH_SECRET` in **`frontend/.env.local`** (not only the repo root `.env`).
 
 ## Docker (full stack)
 
@@ -144,29 +152,50 @@ npx prisma studio           # optional GUI
 5. **Refresh** — Before access token expiry, Auth.js calls `POST /auth/refresh` with the refresh token.
 6. **Logout** — `POST /auth/logout` clears refresh hash; Auth.js `signOut` clears the session.
 
-## Roles & permissions (Phase 1)
+## Roles & permissions
 
-| Endpoint        | ADMIN | SALES | DEVELOPER |
-| --------------- | ----- | ----- | --------- |
-| `GET /users/me` | ✓     | ✓     | ✓         |
-| `GET /users`    | ✓     | —     | —         |
-| `GET /users/:id`| ✓     | —     | —         |
-| Auth routes     | ✓     | ✓     | ✓         |
+| Capability | ADMIN | SALES | DEVELOPER |
+| ---------- | ----- | ----- | --------- |
+| Manage leads | ✓ | ✓ | — |
+| View leads | ✓ | ✓ | Qualified only |
+| Manage inquiries | ✓ | ✓ | — |
+| View inquiries | ✓ | ✓ | Qualified leads only |
+| Technical notes | ✓ | ✓ | ✓ (dedicated endpoint) |
+| Manage users | ✓ | — | — |
 
-Lead/inquiry/proposal permissions are added in Phase 2+.
+## API endpoints
 
-## API endpoints (Phase 1)
+| Method | Path | Auth | Description |
+| ------ | ---- | ---- | ----------- |
+| GET | `/health` | Public | Health check |
+| POST | `/auth/signup` | Public | Register (SALES) |
+| POST | `/auth/login` | Public | Login |
+| POST | `/auth/refresh` | Refresh | Rotate tokens |
+| POST | `/auth/logout` | Bearer | Logout |
+| GET | `/users/me` | Bearer | Profile |
+| GET | `/users` | ADMIN | List users |
+| GET | `/leads` | Bearer | List leads (paginated) |
+| POST | `/leads` | ADMIN, SALES | Create lead |
+| GET | `/leads/:id` | Bearer | Lead detail + inquiries |
+| PATCH | `/leads/:id` | ADMIN, SALES | Update lead |
+| DELETE | `/leads/:id` | ADMIN, SALES | Soft delete |
+| GET | `/inquiries` | Bearer | List inquiries |
+| POST | `/inquiries` | ADMIN, SALES | Create inquiry |
+| GET | `/inquiries/:id` | Bearer | Inquiry detail |
+| PATCH | `/inquiries/:id` | ADMIN, SALES | Update inquiry |
+| PATCH | `/inquiries/:id/technical-notes` | Bearer | Technical notes |
+| DELETE | `/inquiries/:id` | ADMIN, SALES | Soft delete |
+| GET | `/activity` | Bearer | Recent activity |
+| GET | `/activity/:type/:id` | Bearer | Entity activity |
+| POST | `/proposals/generate` | ADMIN, SALES | Generate proposal from inquiry |
+| GET | `/proposals/:id` | Bearer | View proposal |
+| GET | `/proposals/by-inquiry/:inquiryId` | Bearer | Proposal for inquiry |
+| PATCH | `/proposals/:id` | ADMIN, SALES | Edit proposal |
+| GET | `/dashboard/summary` | Bearer | Dashboard metrics & activity |
 
-| Method | Path            | Auth     | Description              |
-| ------ | --------------- | -------- | ------------------------ |
-| GET    | `/health`       | Public   | Health check             |
-| POST   | `/auth/signup`  | Public   | Register (SALES role)    |
-| POST   | `/auth/login`   | Public   | Login                    |
-| POST   | `/auth/refresh` | Refresh  | Rotate tokens            |
-| POST   | `/auth/logout`  | Bearer   | Invalidate refresh token |
-| GET    | `/users/me`     | Bearer   | Current user profile     |
-| GET    | `/users`        | ADMIN    | List users               |
-| GET    | `/users/:id`    | ADMIN    | Get user by id           |
+## AI configuration
+
+Set `OPENAI_API_KEY` in backend `.env` to enable OpenAI proposal generation. Without it, the **mock generator** runs automatically so the feature always works locally.
 
 ## Assumptions & tradeoffs
 

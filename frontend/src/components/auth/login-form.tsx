@@ -37,7 +37,13 @@ export function LoginForm() {
     });
 
     if (result?.error) {
-      setError('Invalid email or password');
+      setError(
+        result.error.includes('Cannot reach the API')
+          ? result.error
+          : result.error === 'CredentialsSignin'
+            ? 'Invalid email or password. If this is your first run, seed the database (see README).'
+            : result.error,
+      );
       return;
     }
 

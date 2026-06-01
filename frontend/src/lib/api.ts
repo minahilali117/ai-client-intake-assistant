@@ -1,4 +1,27 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+export function getApiUrl(): string {
+  if (typeof window === 'undefined') {
+    return (
+      process.env.INTERNAL_API_URL ??
+      process.env.NEXT_PUBLIC_API_URL ??
+      'http://localhost:3001'
+    );
+  }
+  return process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+}
+
+async function apiFetch(
+  path: string,
+  init?: RequestInit,
+): Promise<Response> {
+  try {
+    return await fetch(`${getApiUrl()}${path}`, init);
+  } catch {
+    throw new ApiError(
+      `Cannot reach the API at ${getApiUrl()}. Start the backend: cd backend && npm run dev`,
+      0,
+    );
+  }
+}
 
 export interface AuthApiUser {
   id: string;
@@ -43,7 +66,7 @@ export async function apiSignup(payload: {
   email: string;
   password: string;
 }): Promise<AuthApiResponse> {
-  const response = await fetch(`${API_URL}/auth/signup`, {
+  const response = await apiFetch('/auth/signup', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -57,7 +80,7 @@ export async function apiLogin(payload: {
   email: string;
   password: string;
 }): Promise<AuthApiResponse> {
-  const response = await fetch(`${API_URL}/auth/login`, {
+  const response = await apiFetch('/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -68,7 +91,7 @@ export async function apiLogin(payload: {
 }
 
 export async function apiRefresh(refreshToken: string): Promise<AuthApiResponse> {
-  const response = await fetch(`${API_URL}/auth/refresh`, {
+  const response = await apiFetch('/auth/refresh', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ refreshToken }),
@@ -79,7 +102,7 @@ export async function apiRefresh(refreshToken: string): Promise<AuthApiResponse>
 }
 
 export async function apiLogout(accessToken: string): Promise<void> {
-  await fetch(`${API_URL}/auth/logout`, {
+  await apiFetch('/auth/logout', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -89,7 +112,7 @@ export async function apiLogout(accessToken: string): Promise<void> {
 }
 
 export async function apiGetProfile(accessToken: string): Promise<AuthApiUser> {
-  const response = await fetch(`${API_URL}/users/me`, {
+  const response = await apiFetch('/users/me', {
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
@@ -99,6 +122,3 @@ export async function apiGetProfile(accessToken: string): Promise<AuthApiUser> {
   return parseResponse<AuthApiUser>(response);
 }
 
-export function getApiUrl() {
-  return API_URL;
-}

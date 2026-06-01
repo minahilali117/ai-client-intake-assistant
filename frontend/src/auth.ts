@@ -5,7 +5,21 @@ import type { AppRole } from '@/types/next-auth';
 
 const ACCESS_TOKEN_TTL_MS = 14 * 60 * 1000;
 
+const authSecret =
+  process.env.AUTH_SECRET ??
+  process.env.NEXTAUTH_SECRET ??
+  (process.env.NODE_ENV !== 'production'
+    ? 'local-dev-auth-secret-minimum-32-characters'
+    : undefined);
+
+if (!authSecret) {
+  throw new Error(
+    'Missing AUTH_SECRET or NEXTAUTH_SECRET. Copy frontend/.env.local.example to frontend/.env.local',
+  );
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  secret: authSecret,
   session: { strategy: 'jwt' },
   pages: {
     signIn: '/login',
@@ -22,19 +36,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         }
 
-        const result = await apiLogin({
-          email: String(credentials.email),
-          password: String(credentials.password),
-        });
+        try {
+          const result = await apiLogin({
+            email: String(credentials.email),
+            password: String(credentials.password),
+          });
 
-        return {
+          return {
           id: result.user.id,
           name: result.user.name,
           email: result.user.email,
           role: result.user.role,
           accessToken: result.accessToken,
           refreshToken: result.refreshToken,
-        };
+          };
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : 'Authentication failed';
+          throw new Error(message);
+        }
       },
     }),
   ],

@@ -22,8 +22,14 @@ export default async function DashboardLayout({
             <Link href="/dashboard" className="text-lg font-semibold text-slate-900">
               Intake Assistant
             </Link>
-            <nav className="text-sm text-slate-600">
-              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium uppercase tracking-wide">
+            <nav className="flex items-center gap-4 text-sm">
+              <Link href="/dashboard" className="text-slate-600 hover:text-slate-900">
+                Overview
+              </Link>
+              <Link href="/dashboard/leads" className="text-slate-600 hover:text-slate-900">
+                Leads
+              </Link>
+              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium uppercase tracking-wide text-slate-700">
                 {session.user.role}
               </span>
             </nav>
