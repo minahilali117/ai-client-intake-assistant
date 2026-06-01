@@ -1,0 +1,808 @@
+================================================================================
+AI-POWERED CLIENT INTAKE & PROPOSAL ASSISTANT
+PROJECT PLANNING DOCUMENT
+================================================================================
+
+Goal
+--------------------------------------------------------------------------------
+Build an internal business tool for managing client leads, project inquiries,
+proposal generation, and sales workflow management.
+
+The application should demonstrate:
+- Clean architecture
+- Production-ready patterns
+- RBAC authorization
+- AI integration
+- Database design
+- TypeScript quality
+- Scalability considerations
+- DevOps awareness
+
+================================================================================
+TECH STACK
+================================================================================
+
+Frontend
+--------------------------------------------------------------------------------
+- Next.js 15 (App Router)
+- TypeScript
+- Tailwind CSS
+- Shadcn UI
+- TanStack Query
+- React Hook Form
+- Zod
+- Axios
+- Auth.js (NextAuth v5)
+- React PDF / PDF-Lib (Proposal export)
+
+Why
+--------------------------------------------------------------------------------
+- Modern production-grade stack
+- Excellent DX and TypeScript support
+- Server Components where possible
+- Client Components only when required
+- Optimized data fetching and caching
+- Clean and professional UI
+
+Backend
+--------------------------------------------------------------------------------
+- NestJS
+- TypeScript
+- Prisma ORM
+- PostgreSQL
+- JWT Authentication
+- Swagger/OpenAPI
+- Multer (file uploads)
+
+Why Prisma instead of TypeORM
+--------------------------------------------------------------------------------
+- Better TypeScript support
+- Safer schema migrations
+- Easier filtering/pagination
+- Cleaner developer experience
+
+Infrastructure
+--------------------------------------------------------------------------------
+- Docker
+- Docker Compose
+
+Optional DevOps
+--------------------------------------------------------------------------------
+- GitHub Actions CI Pipeline
+
+Observability
+--------------------------------------------------------------------------------
+- OpenTelemetry
+- Request ID Logging
+
+AI
+--------------------------------------------------------------------------------
+Primary:
+- OpenAI API (optional)
+
+Fallback:
+- Local Mock Proposal Generator
+
+Switch controlled through environment variable.
+
+================================================================================
+HIGH LEVEL ARCHITECTURE
+================================================================================
+
+Frontend (Next.js)
+        |
+        |
+        | REST API
+        |
+Backend (NestJS)
+        |
+        |
+        | Prisma ORM
+        |
+PostgreSQL
+
+Architecture Principles
+--------------------------------------------------------------------------------
+- Feature-based architecture
+- Separation of concerns
+- DTO validation
+- RBAC authorization
+- Repository/service pattern
+- Reusable UI components
+- Modular NestJS design
+
+================================================================================
+FRONTEND ARCHITECTURE
+================================================================================
+
+src/
+
+app/
+├── (auth)
+│   ├── login
+│   └── signup
+│
+├── (dashboard)
+│   ├── dashboard
+│   ├── leads
+│   ├── inquiries
+│   ├── proposals
+│   ├── activity
+│   └── users
+│
+├── error.tsx
+├── loading.tsx
+└── layout.tsx
+
+components/
+├── ui
+├── tables
+├── forms
+├── charts
+├── dashboard
+└── shared
+
+features/
+├── auth
+├── leads
+├── inquiries
+├── proposals
+├── activity
+└── dashboard
+
+lib/
+├── api
+├── auth
+├── validators
+└── utils
+
+hooks/
+
+types/
+
+services/
+
+Frontend Best Practices
+--------------------------------------------------------------------------------
+- Server Components by default
+- Client Components only where required
+- Route groups
+- Error boundaries
+- Loading states
+- Shared layouts
+- Protected routes
+- Query caching
+- Form validation
+
+================================================================================
+BACKEND ARCHITECTURE
+================================================================================
+
+src/
+
+common/
+├── decorators
+├── guards
+├── interceptors
+├── filters
+├── middleware
+├── enums
+├── types
+└── constants
+
+modules/
+
+auth/
+users/
+leads/
+inquiries/
+proposals/
+activity-logs/
+dashboard/
+files/
+ai/
+
+prisma/
+
+main.ts
+
+================================================================================
+AUTHENTICATION DESIGN
+================================================================================
+
+Auth Flow
+--------------------------------------------------------------------------------
+
+Login
+↓
+NestJS verifies credentials
+↓
+Access Token issued
+↓
+Refresh Token issued
+↓
+Session maintained
+↓
+Protected API access
+
+Implementation
+--------------------------------------------------------------------------------
+- JWT Access Tokens
+- Refresh Tokens
+- Password hashing using bcrypt
+- Auth.js integration
+- Protected frontend routes
+- Protected backend routes
+
+================================================================================
+RBAC DESIGN
+================================================================================
+
+Roles
+--------------------------------------------------------------------------------
+
+ADMIN
+- Manage users
+- Manage leads
+- Manage inquiries
+- Manage proposals
+- View activity logs
+- Full system access
+
+SALES
+- Create leads
+- Update leads
+- Create inquiries
+- Generate proposals
+- Update statuses
+
+DEVELOPER
+- View qualified leads
+- View inquiries
+- Add technical notes
+
+Implementation
+--------------------------------------------------------------------------------
+- Roles decorator
+- Roles guard
+- JWT guard
+- Route-level permissions
+
+================================================================================
+DATABASE DESIGN
+================================================================================
+
+ENUMS
+--------------------------------------------------------------------------------
+
+UserRole
+- ADMIN
+- SALES
+- DEVELOPER
+
+LeadStatus
+- NEW
+- CONTACTED
+- QUALIFIED
+- PROPOSAL_SENT
+- WON
+- LOST
+
+ProjectType
+- WEB_APP
+- MOBILE_APP
+- SAAS
+- AI_INTEGRATION
+- CLOUD
+- MVP
+- OTHER
+
+Priority
+- LOW
+- MEDIUM
+- HIGH
+- URGENT
+
+================================================================================
+TABLE: USERS
+================================================================================
+
+User
+--------------------------------------------------------------------------------
+id
+name
+email
+passwordHash
+role
+
+refreshTokenHash
+
+createdAt
+updatedAt
+
+================================================================================
+TABLE: LEADS
+================================================================================
+
+Lead
+--------------------------------------------------------------------------------
+id
+
+companyName
+contactPerson
+
+email
+phone
+
+source
+
+status
+
+createdById
+
+createdAt
+updatedAt
+
+deletedAt
+
+Relationships
+--------------------------------------------------------------------------------
+1 User -> Many Leads
+1 Lead -> Many Inquiries
+
+================================================================================
+TABLE: INQUIRIES
+================================================================================
+
+Inquiry
+--------------------------------------------------------------------------------
+id
+
+leadId
+
+projectTitle
+description
+
+projectType
+
+budgetRange
+expectedTimeline
+
+priority
+
+technicalNotes
+
+createdAt
+updatedAt
+
+deletedAt
+
+================================================================================
+TABLE: PROPOSALS
+================================================================================
+
+Proposal
+--------------------------------------------------------------------------------
+id
+
+inquiryId
+
+projectSummary
+
+suggestedFeatures
+
+technicalApproach
+
+estimatedComplexity
+
+suggestedTimeline
+
+questionsToAsk
+
+generatedByAI
+
+createdAt
+updatedAt
+
+deletedAt
+
+================================================================================
+TABLE: ACTIVITY LOGS
+================================================================================
+
+ActivityLog
+--------------------------------------------------------------------------------
+id
+
+userId
+
+action
+
+entityType
+entityId
+
+metadata (JSON)
+
+createdAt
+
+Example Metadata
+--------------------------------------------------------------------------------
+{
+  oldStatus: "qualified",
+  newStatus: "proposal_sent"
+}
+
+================================================================================
+TABLE: ATTACHMENTS
+================================================================================
+
+Attachment
+--------------------------------------------------------------------------------
+id
+
+inquiryId
+
+fileName
+filePath
+mimeType
+fileSize
+
+uploadedAt
+
+================================================================================
+FEATURE IMPLEMENTATION PLAN
+================================================================================
+
+1. Authentication
+--------------------------------------------------------------------------------
+- Signup
+- Login
+- Logout
+- JWT authentication
+- Refresh tokens
+- Password hashing
+- Protected routes
+
+2. User Management
+--------------------------------------------------------------------------------
+- Create users
+- Update users
+- Delete users
+- List users
+- Role assignment
+
+3. Lead Management
+--------------------------------------------------------------------------------
+- Create lead
+- Read lead
+- Update lead
+- Delete lead
+- Search lead
+- Filter lead
+- Pagination
+- Sorting
+
+4. Inquiry Management
+--------------------------------------------------------------------------------
+- Create inquiry
+- Read inquiry
+- Update inquiry
+- Delete inquiry
+- Technical notes
+- File attachments
+
+5. Proposal Management
+--------------------------------------------------------------------------------
+- Generate proposal
+- Edit proposal
+- Save proposal
+- View proposal
+- Export proposal PDF
+
+6. AI Proposal Generator
+--------------------------------------------------------------------------------
+Input:
+- Project details
+
+Output:
+- Summary
+- Features
+- Technical approach
+- Timeline
+- Complexity
+- Discovery questions
+
+Modes:
+- OpenAI
+- Mock Generator
+
+7. Activity Logging
+--------------------------------------------------------------------------------
+Track:
+- Lead created
+- Lead updated
+- Status changed
+- Inquiry created
+- Proposal generated
+- Proposal edited
+- Technical note added
+
+8. Dashboard
+--------------------------------------------------------------------------------
+Cards:
+- Total leads
+- Qualified leads
+- Proposals sent
+- Won count
+- Lost count
+
+Charts:
+- Leads by project type
+- Leads by status
+
+Widgets:
+- Recent activity
+
+================================================================================
+OPTIONAL FEATURES
+================================================================================
+
+Pagination
+--------------------------------------------------------------------------------
+Purpose:
+- Efficient large datasets
+
+Sorting
+--------------------------------------------------------------------------------
+Purpose:
+- Better table usability
+
+File Attachments
+--------------------------------------------------------------------------------
+Purpose:
+- Store client requirement documents
+
+PDF Proposal Export
+--------------------------------------------------------------------------------
+Purpose:
+- Shareable proposal documents
+
+Backend Tests
+--------------------------------------------------------------------------------
+Tools:
+- Jest
+- Supertest
+
+Coverage:
+- Auth
+- RBAC
+- Leads
+- Proposals
+
+CI/CD Pipeline
+--------------------------------------------------------------------------------
+GitHub Actions
+
+Runs:
+- lint
+- tests
+- build
+
+Postman Collection
+--------------------------------------------------------------------------------
+Purpose:
+- Easier API evaluation
+
+================================================================================
+ADVANCED FEATURES
+================================================================================
+
+Audit Trail Metadata
+--------------------------------------------------------------------------------
+Purpose:
+- Track before/after changes
+
+Example:
+Status changed from:
+QUALIFIED
+to
+PROPOSAL_SENT
+
+Stored inside Activity Logs metadata.
+
+Soft Delete
+--------------------------------------------------------------------------------
+Purpose:
+- Prevent accidental data loss
+
+Implementation:
+deletedAt field
+
+Records remain recoverable.
+
+Request ID Logging
+--------------------------------------------------------------------------------
+Purpose:
+- Trace requests through the system
+
+Each request receives:
+X-Request-ID
+
+Useful for:
+- Debugging
+- Log correlation
+
+Refresh Tokens
+--------------------------------------------------------------------------------
+Purpose:
+- Persistent login experience
+
+Benefits:
+- More secure than long-lived access tokens
+- Better user experience
+
+Swagger Documentation
+--------------------------------------------------------------------------------
+Purpose:
+- Auto-generated API docs
+
+Endpoint:
+/api/docs
+
+Benefits:
+- Easy reviewer testing
+- Professional API documentation
+
+OpenTelemetry
+--------------------------------------------------------------------------------
+Purpose:
+- Distributed tracing
+- Performance monitoring
+
+Tracks:
+- Request lifecycle
+- Database calls
+- AI API calls
+
+Can identify:
+- Slow endpoints
+- Bottlenecks
+- Failure points
+
+================================================================================
+API DESIGN (ROUGH)
+================================================================================
+
+AUTH
+--------------------------------------------------------------------------------
+POST /auth/signup
+POST /auth/login
+POST /auth/logout
+POST /auth/refresh
+
+USERS
+--------------------------------------------------------------------------------
+GET    /users
+GET    /users/:id
+POST   /users
+PATCH  /users/:id
+DELETE /users/:id
+
+LEADS
+--------------------------------------------------------------------------------
+GET    /leads
+GET    /leads/:id
+POST   /leads
+PATCH  /leads/:id
+DELETE /leads/:id
+
+INQUIRIES
+--------------------------------------------------------------------------------
+GET    /inquiries
+GET    /inquiries/:id
+POST   /inquiries
+PATCH  /inquiries/:id
+DELETE /inquiries/:id
+
+PROPOSALS
+--------------------------------------------------------------------------------
+POST   /proposals/generate
+GET    /proposals/:id
+PATCH  /proposals/:id
+GET    /proposals/:id/export
+
+DASHBOARD
+--------------------------------------------------------------------------------
+GET /dashboard/summary
+
+ACTIVITY
+--------------------------------------------------------------------------------
+GET /activity
+
+FILES
+--------------------------------------------------------------------------------
+POST /files/upload
+
+================================================================================
+SEED DATA
+================================================================================
+
+Admin User
+Sales User
+Developer User
+
+Sample Leads
+
+Sample Inquiries
+
+Sample Proposals
+
+Sample Activity Logs
+
+================================================================================
+DOCKER SETUP
+================================================================================
+
+Services
+--------------------------------------------------------------------------------
+frontend
+backend
+postgres
+
+Future:
+--------------------------------------------------------------------------------
+otel-collector
+jaeger
+
+================================================================================
+README CONTENT
+================================================================================
+
+Project Overview
+
+Tech Stack
+
+Architecture Overview
+
+Setup Instructions
+
+Docker Setup
+
+Environment Variables
+
+Database Setup
+
+Seed Credentials
+
+Authentication Flow
+
+Roles & Permissions
+
+API Endpoints
+
+AI Configuration
+
+Optional Features
+
+Tradeoffs & Assumptions
+
+Future Improvements
+
+================================================================================
+GOAL OF FINAL SUBMISSION
+================================================================================
+
+Deliver a production-style internal CRM/proposal generation platform that
+demonstrates:
+
+- Strong TypeScript skills
+- Modern Next.js architecture
+- Proper NestJS architecture
+- Clean RBAC implementation
+- Scalable database design
+- AI integration strategy
+- DevOps awareness
+- Observability awareness
+- Professional documentation
+- Production-ready development practices
+================================================================================

@@ -1,0 +1,19 @@
+{
+  "name": "client-intake-proposal-assistant",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI-Powered Client Intake & Proposal Assistant",
+  "scripts": {
+    "dev:api": "npm run dev --workspace=backend",
+    "dev:web": "npm run dev --workspace=frontend",
+    "build:api": "npm run build --workspace=backend",
+    "build:web": "npm run build --workspace=frontend",
+    "lint": "npm run lint --workspaces --if-present",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down"
+  },
+  "workspaces": [
+    "backend",
+    "frontend"
+  ]
+}
