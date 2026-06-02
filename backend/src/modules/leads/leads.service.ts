@@ -67,10 +67,11 @@ export class LeadsService {
       'companyName',
       'status',
     ] as const;
+    const requestedSort = query.sortBy ?? 'createdAt';
     const sortBy = allowedSortFields.includes(
-      (query.sortBy ?? 'createdAt') as (typeof allowedSortFields)[number],
+      requestedSort as (typeof allowedSortFields)[number],
     )
-      ? (query.sortBy as (typeof allowedSortFields)[number])
+      ? (requestedSort as (typeof allowedSortFields)[number])
       : 'createdAt';
     const sortOrder = query.sortOrder ?? 'desc';
 

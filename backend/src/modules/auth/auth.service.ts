@@ -27,6 +27,11 @@ export interface AuthResponse {
   refreshToken: string;
 }
 
+interface RefreshPayload {
+  sub: string;
+  rtv?: number;
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -51,6 +56,7 @@ export class AuthService {
         email: dto.email.toLowerCase(),
         passwordHash,
         role: UserRole.SALES,
+        refreshTokenVersion: 0,
       },
     });
 
@@ -74,11 +80,23 @@ export class AuthService {
     return this.issueTokensForUser(user);
   }
 
-  async refresh(userId: string, refreshToken: string): Promise<AuthResponse> {
+  async refresh(
+    userId: string,
+    refreshToken: string,
+    tokenVersion?: number,
+  ): Promise<AuthResponse> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
     if (!user?.refreshTokenHash) {
       throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    if (
+      tokenVersion !== undefined &&
+      tokenVersion !== user.refreshTokenVersion
+    ) {
+      await this.revokeAllSessions(user.id);
+      throw new UnauthorizedException('Refresh token reuse detected');
     }
 
     const refreshValid = await bcrypt.compare(
@@ -90,13 +108,25 @@ export class AuthService {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
-    return this.issueTokensForUser(user);
+    const updatedUser = await this.prisma.user.update({
+      where: { id: user.id },
+      data: { refreshTokenVersion: { increment: 1 } },
+    });
+
+    return this.issueTokensForUser(updatedUser);
   }
 
   async logout(userId: string): Promise<void> {
+    await this.revokeAllSessions(userId);
+  }
+
+  private async revokeAllSessions(userId: string) {
     await this.prisma.user.update({
       where: { id: userId },
-      data: { refreshTokenHash: null },
+      data: {
+        refreshTokenHash: null,
+        refreshTokenVersion: { increment: 1 },
+      },
     });
   }
 
@@ -128,6 +158,11 @@ export class AuthService {
       role: user.role,
     };
 
+    const refreshPayload: RefreshPayload = {
+      sub: user.id,
+      rtv: user.refreshTokenVersion,
+    };
+
     const accessExpiresIn =
       this.configService.get<string>('JWT_ACCESS_EXPIRES_IN') ?? '15m';
     const refreshExpiresIn =
@@ -138,7 +173,7 @@ export class AuthService {
         secret: this.configService.getOrThrow<string>('JWT_ACCESS_SECRET'),
         expiresIn: accessExpiresIn,
       }),
-      this.jwtService.signAsync(payload, {
+      this.jwtService.signAsync(refreshPayload, {
         secret: this.configService.getOrThrow<string>('JWT_REFRESH_SECRET'),
         expiresIn: refreshExpiresIn,
       }),

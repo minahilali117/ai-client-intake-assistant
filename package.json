@@ -9,6 +9,7 @@
     "build:api": "npm run build --workspace=backend",
     "build:web": "npm run build --workspace=frontend",
     "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
     "docker:up": "docker compose up --build",
     "docker:down": "docker compose down"
   },

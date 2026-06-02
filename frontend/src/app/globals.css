@@ -10,5 +10,10 @@
 body {
   color: var(--foreground);
   background: var(--background);
+  font-family:
+    "Segoe UI",
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
   min-height: 100vh;
 }

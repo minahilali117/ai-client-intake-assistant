@@ -8,6 +8,7 @@ const actionLabels: Record<string, string> = {
   TECHNICAL_NOTE_ADDED: 'Technical note added',
   PROPOSAL_GENERATED: 'Proposal generated',
   PROPOSAL_EDITED: 'Proposal edited',
+  FILE_UPLOADED: 'File uploaded',
 };
 
 export function ActivityTimeline({ logs }: { logs: ActivityLog[] }) {

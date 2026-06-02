@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { auth } from '@/auth';
 import { ActivityTimeline } from '@/components/activity/activity-timeline';
 import { ProposalForm } from '@/components/proposals/proposal-form';
+import { ExportPdfButton } from '@/components/proposals/export-pdf-button';
 import { apiFetch } from '@/lib/api-server';
 import type { ActivityLog, Proposal } from '@/types/crm';
 
@@ -41,11 +42,17 @@ export default async function ProposalPage({ params }: PageProps) {
             {proposal.lead?.companyName} · {proposal.inquiry?.projectTitle}
           </p>
         </div>
-        {proposal.generatedByAI && (
-          <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-800">
-            AI generated
-          </span>
-        )}
+        <div className="flex items-center gap-3">
+          <ExportPdfButton
+            proposalId={proposal.id}
+            accessToken={session!.accessToken}
+          />
+          {proposal.generatedByAI && (
+            <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-800">
+              AI generated
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">

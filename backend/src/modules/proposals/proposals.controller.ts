@@ -1,20 +1,39 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Res,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiProduces,
+  ApiTags,
+} from '@nestjs/swagger';
+import { Response } from 'express';
 import { UserRole } from '@prisma/client';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { AuthenticatedUser } from '../../common/types/authenticated-user.type';
 import { GenerateProposalDto } from './dto/generate-proposal.dto';
 import { UpdateProposalDto } from './dto/update-proposal.dto';
+import { ProposalPdfService } from './proposal-pdf.service';
 import { ProposalsService } from './proposals.service';
 
 @ApiTags('Proposals')
-@ApiBearerAuth()
+@ApiBearerAuth('access-token')
 @Controller('proposals')
 export class ProposalsController {
-  constructor(private proposalsService: ProposalsService) {}
+  constructor(
+    private proposalsService: ProposalsService,
+    private proposalPdfService: ProposalPdfService,
+  ) {}
 
   @Roles(UserRole.ADMIN, UserRole.SALES)
+  @ApiOperation({ summary: 'Generate proposal brief from inquiry (AI or mock)' })
   @Post('generate')
   generate(
     @Body() dto: GenerateProposalDto,
@@ -33,7 +52,24 @@ export class ProposalsController {
   }
 
   @Roles(UserRole.ADMIN, UserRole.SALES, UserRole.DEVELOPER)
+  @Get(':id/export')
+  @ApiOperation({ summary: 'Export proposal as PDF' })
+  @ApiProduces('application/pdf')
+  async exportPdf(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Res() res: Response,
+  ) {
+    await this.proposalsService.findOne(id, user);
+    const { stream, fileName } = await this.proposalPdfService.generatePdf(id);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    stream.pipe(res);
+  }
+
+  @Roles(UserRole.ADMIN, UserRole.SALES, UserRole.DEVELOPER)
   @Get(':id')
+  @ApiOperation({ summary: 'Get proposal by ID' })
   findOne(
     @Param('id') id: string,
     @CurrentUser() user: AuthenticatedUser,

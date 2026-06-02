@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres123
+          POSTGRES_DB: client_intake_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d client_intake_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres123@localhost:5432/client_intake_test?schema=public
+      JWT_ACCESS_SECRET: ${{ secrets.JWT_ACCESS_SECRET }}
+      JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
+      FRONTEND_URL: http://localhost:3000
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - run: npm ci
+      - run: npm run prisma:generate --workspace=backend
+      - run: npm run prisma:migrate:deploy --workspace=backend
+      - run: npm run prisma:seed --workspace=backend
+      - run: npm run build --workspace=backend
+      - run: npm run test --workspace=backend
+      - run: npm run test:e2e --workspace=backend
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - run: npm ci
+      - run: npm run test --workspace=frontend --if-present
+      - run: npm run build --workspace=frontend
+        env:
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          NEXT_PUBLIC_API_URL: http://localhost:3001

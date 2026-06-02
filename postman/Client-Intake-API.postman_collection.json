@@ -1,0 +1,84 @@
+{
+  "info": {
+    "name": "Client Intake & Proposal Assistant",
+    "description": "Complete API collection. Set `baseUrl` and run Auth > Login to populate `accessToken`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3001" },
+    { "key": "accessToken", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"Admin123!\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.accessToken) pm.collectionVariables.set('accessToken', json.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        { "name": "Signup", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"New User\",\n  \"email\": \"new@example.com\",\n  \"password\": \"SecurePass123!\"\n}" }, "url": "{{baseUrl}}/auth/signup" } },
+        { "name": "Refresh", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"refreshToken\": \"<refresh-token>\"\n}" }, "url": "{{baseUrl}}/auth/refresh" } },
+        { "name": "Logout", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }], "url": "{{baseUrl}}/auth/logout" } }
+      ]
+    },
+    {
+      "name": "Leads",
+      "item": [
+        { "name": "List Leads", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }], "url": "{{baseUrl}}/leads?page=1&limit=10" } },
+        { "name": "Create Lead", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"companyName\": \"Example Co\",\n  \"contactPerson\": \"Jane\",\n  \"email\": \"jane@example.com\",\n  \"source\": \"Website\",\n  \"status\": \"NEW\"\n}" }, "url": "{{baseUrl}}/leads" } },
+        { "name": "Get Lead", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }], "url": "{{baseUrl}}/leads/:id" } }
+      ]
+    },
+    {
+      "name": "Inquiries",
+      "item": [
+        { "name": "List Inquiries", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }], "url": "{{baseUrl}}/inquiries" } },
+        { "name": "Create Inquiry", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"leadId\": \"<lead-id>\",\n  \"projectTitle\": \"New Project\",\n  \"description\": \"Details\",\n  \"projectType\": \"WEB_APP\",\n  \"budgetRange\": \"$50k\",\n  \"expectedTimeline\": \"3 months\"\n}" }, "url": "{{baseUrl}}/inquiries" } }
+      ]
+    },
+    {
+      "name": "Proposals",
+      "item": [
+        { "name": "Generate Proposal", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"inquiryId\": \"<inquiry-id>\"\n}" }, "url": "{{baseUrl}}/proposals/generate" } },
+        { "name": "Export PDF", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }], "url": "{{baseUrl}}/proposals/:id/export" } }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        { "name": "Summary", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }], "url": "{{baseUrl}}/dashboard/summary" } }
+      ]
+    },
+    {
+      "name": "Files",
+      "item": [
+        { "name": "Upload", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }], "body": { "mode": "formdata", "formdata": [{ "key": "inquiryId", "value": "<inquiry-id>", "type": "text" }, { "key": "file", "type": "file", "src": [] }] }, "url": "{{baseUrl}}/files/upload" } }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": [
+        { "name": "Health Check", "request": { "method": "GET", "url": "{{baseUrl}}/health" } }
+      ]
+    }
+  ]
+}

@@ -7,7 +7,13 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { RefreshAuthUser } from './strategies/jwt-refresh.strategy';
 import { Throttle } from '@nestjs/throttler';
 import { Response } from 'express';
 import { Public } from '../../common/decorators/public.decorator';
@@ -25,6 +31,8 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Public()
+  @ApiOperation({ summary: 'Register a new user (SALES role)' })
+  @ApiResponse({ status: 201, description: 'User created with tokens' })
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('signup')
   async signup(
@@ -37,6 +45,8 @@ export class AuthController {
   }
 
   @Public()
+  @ApiOperation({ summary: 'Login with email and password' })
+  @ApiResponse({ status: 200, description: 'Returns access and refresh tokens' })
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('login')
   @HttpCode(HttpStatus.OK)
@@ -50,20 +60,30 @@ export class AuthController {
   }
 
   @Public()
+  @ApiOperation({
+    summary: 'Rotate refresh token',
+    description:
+      'Issues new access/refresh tokens. Detects refresh token reuse and revokes sessions.',
+  })
   @UseGuards(JwtRefreshGuard)
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   async refresh(
-    @CurrentUser() user: AuthenticatedUser & { refreshToken: string },
+    @CurrentUser() user: RefreshAuthUser,
     @Body() _dto: RefreshTokenDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const result = await this.authService.refresh(user.id, user.refreshToken);
+    const result = await this.authService.refresh(
+      user.id,
+      user.refreshToken,
+      user.refreshTokenVersion,
+    );
     this.setRefreshTokenCookie(res, result.refreshToken);
     return this.toAuthResponse(result);
   }
 
-  @ApiBearerAuth()
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Logout and invalidate refresh token' })
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   async logout(

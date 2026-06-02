@@ -7,5 +7,10 @@ dist/
 *.log
 .DS_Store
 coverage/
+uploads/
+backend/uploads/
 .turbo/
 *.tsbuildinfo
+prisma/migrations/
+prisma/dev.db
+*.db

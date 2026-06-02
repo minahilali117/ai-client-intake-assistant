@@ -3,6 +3,10 @@ import { auth } from '@/auth';
 import { ActivityTimeline } from '@/components/activity/activity-timeline';
 import { InquiryForm } from '@/components/inquiries/inquiry-form';
 import { TechnicalNotesForm } from '@/components/inquiries/technical-notes-form';
+import {
+  AttachmentPanel,
+  type AttachmentItem,
+} from '@/components/files/attachment-panel';
 import { PriorityBadge } from '@/components/ui/status-badge';
 import { apiFetch } from '@/lib/api-server';
 import {
@@ -28,7 +32,7 @@ export default async function InquiryDetailPage({ params }: PageProps) {
   const { id } = await params;
   const role = session!.user.role;
 
-  const [inquiry, activity, proposal] = await Promise.all([
+  const [inquiry, activity, proposal, attachments] = await Promise.all([
     apiFetch<Inquiry>(`/inquiries/${id}`, session!.accessToken),
     apiFetch<ActivityLog[]>(
       `/activity/inquiry/${id}?limit=20`,
@@ -37,6 +41,10 @@ export default async function InquiryDetailPage({ params }: PageProps) {
     apiFetch<Proposal>(`/proposals/by-inquiry/${id}`, session!.accessToken).catch(
       () => null,
     ),
+    apiFetch<AttachmentItem[]>(
+      `/files/inquiry/${id}`,
+      session!.accessToken,
+    ).catch(() => [] as AttachmentItem[]),
   ]);
 
   const canManage = role === 'ADMIN' || role === 'SALES';
@@ -120,6 +128,13 @@ export default async function InquiryDetailPage({ params }: PageProps) {
           {!canManage && canEditNotes && (
             <TechnicalNotesForm accessToken={session!.accessToken} inquiry={inquiry} />
           )}
+
+          <AttachmentPanel
+            inquiryId={id}
+            accessToken={session!.accessToken}
+            attachments={attachments}
+            canUpload={canManage}
+          />
 
           {canManage && (
             <div className="rounded-xl border bg-slate-50 p-4 text-sm text-slate-600">

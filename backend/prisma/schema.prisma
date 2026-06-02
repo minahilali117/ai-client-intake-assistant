@@ -47,6 +47,7 @@ enum ActivityAction {
   TECHNICAL_NOTE_ADDED
   PROPOSAL_GENERATED
   PROPOSAL_EDITED
+  FILE_UPLOADED
 }
 
 model User {
@@ -55,11 +56,13 @@ model User {
   email            String         @unique
   passwordHash     String         @map("password_hash")
   role             UserRole       @default(SALES)
-  refreshTokenHash String?        @map("refresh_token_hash")
-  createdAt        DateTime       @default(now()) @map("created_at")
+  refreshTokenHash     String?  @map("refresh_token_hash")
+  refreshTokenVersion  Int      @default(0) @map("refresh_token_version")
+  createdAt            DateTime @default(now()) @map("created_at")
   updatedAt        DateTime       @updatedAt @map("updated_at")
   leads            Lead[]
   activityLogs     ActivityLog[]
+  attachments      Attachment[]
 
   @@map("users")
 }
@@ -98,6 +101,7 @@ model Inquiry {
   priority         Priority    @default(MEDIUM)
   technicalNotes   String?     @map("technical_notes")
   proposal         Proposal?
+  attachments      Attachment[]
   createdAt        DateTime    @default(now()) @map("created_at")
   updatedAt        DateTime    @updatedAt @map("updated_at")
   deletedAt        DateTime?   @map("deleted_at")
@@ -128,6 +132,22 @@ model Proposal {
   @@index([leadId])
   @@index([deletedAt])
   @@map("proposals")
+}
+
+model Attachment {
+  id           String   @id @default(uuid())
+  inquiryId    String   @map("inquiry_id")
+  inquiry      Inquiry  @relation(fields: [inquiryId], references: [id])
+  fileName     String   @map("file_name")
+  filePath     String   @map("file_path")
+  mimeType     String   @map("mime_type")
+  fileSize     Int      @map("file_size")
+  uploadedById String   @map("uploaded_by_id")
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id])
+  uploadedAt   DateTime @default(now()) @map("uploaded_at")
+
+  @@index([inquiryId])
+  @@map("attachments")
 }
 
 model ActivityLog {

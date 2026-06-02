@@ -77,6 +77,7 @@ export function SignupForm() {
           id="name"
           type="text"
           autoComplete="name"
+          suppressHydrationWarning
           className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
           {...register('name')}
         />
@@ -92,6 +93,7 @@ export function SignupForm() {
           id="email"
           type="email"
           autoComplete="email"
+          suppressHydrationWarning
           className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
           {...register('email')}
         />
@@ -110,6 +112,7 @@ export function SignupForm() {
           id="password"
           type="password"
           autoComplete="new-password"
+          suppressHydrationWarning
           className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
           {...register('password')}
         />
@@ -128,6 +131,7 @@ export function SignupForm() {
           id="confirmPassword"
           type="password"
           autoComplete="new-password"
+          suppressHydrationWarning
           className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
           {...register('confirmPassword')}
         />
@@ -140,6 +144,7 @@ export function SignupForm() {
       <button
         type="submit"
         disabled={isSubmitting}
+        suppressHydrationWarning
         className="w-full rounded-lg bg-brand-600 py-2.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
       >
         {isSubmitting ? 'Creating account...' : 'Create account'}

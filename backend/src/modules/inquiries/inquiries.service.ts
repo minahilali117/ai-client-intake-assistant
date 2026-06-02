@@ -80,10 +80,11 @@ export class InquiriesService {
     const where = this.buildWhere(query, user);
 
     const allowedSortFields = ['createdAt', 'updatedAt', 'priority'] as const;
+    const requestedSort = query.sortBy ?? 'createdAt';
     const sortBy = allowedSortFields.includes(
-      (query.sortBy ?? 'createdAt') as (typeof allowedSortFields)[number],
+      requestedSort as (typeof allowedSortFields)[number],
     )
-      ? (query.sortBy as (typeof allowedSortFields)[number])
+      ? (requestedSort as (typeof allowedSortFields)[number])
       : 'createdAt';
 
     const [data, total] = await Promise.all([

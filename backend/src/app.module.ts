@@ -1,8 +1,10 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
@@ -12,6 +14,7 @@ import { InquiriesModule } from './modules/inquiries/inquiries.module';
 import { AiModule } from './modules/ai/ai.module';
 import { ProposalsModule } from './modules/proposals/proposals.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { FilesModule } from './modules/files/files.module';
 
 @Module({
   imports: [
@@ -34,6 +37,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     AiModule,
     ProposalsModule,
     DashboardModule,
+    FilesModule,
   ],
   controllers: [AppController],
   providers: [
@@ -41,6 +45,14 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: LoggingInterceptor,
+    },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(RequestIdMiddleware).forRoutes('*');
+  }
+}

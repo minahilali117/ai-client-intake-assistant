@@ -8,9 +8,13 @@ import { AuthenticatedUser } from '../../../common/types/authenticated-user.type
 
 interface RefreshJwtPayload {
   sub: string;
-  email: string;
-  role: string;
+  rtv?: number;
 }
+
+export type RefreshAuthUser = AuthenticatedUser & {
+  refreshToken: string;
+  refreshTokenVersion?: number;
+};
 
 @Injectable()
 export class JwtRefreshStrategy extends PassportStrategy(
@@ -38,7 +42,7 @@ export class JwtRefreshStrategy extends PassportStrategy(
   async validate(
     request: Request,
     payload: RefreshJwtPayload,
-  ): Promise<AuthenticatedUser & { refreshToken: string }> {
+  ): Promise<RefreshAuthUser> {
     const refreshToken =
       (request.body?.refreshToken as string | undefined) ??
       (request.cookies?.refreshToken as string | undefined);
@@ -68,6 +72,7 @@ export class JwtRefreshStrategy extends PassportStrategy(
       name: user.name,
       role: user.role,
       refreshToken,
+      refreshTokenVersion: payload.rtv,
     };
   }
 }

@@ -16,7 +16,7 @@ export class ActivityLogsService {
   async log(
     userId: string,
     action: ActivityAction,
-    entityType: 'lead' | 'inquiry' | 'proposal',
+    entityType: 'lead' | 'inquiry' | 'proposal' | 'attachment',
     entityId: string,
     metadata: ActivityMetadata = {},
   ) {
