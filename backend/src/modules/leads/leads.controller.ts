@@ -61,12 +61,21 @@ export class LeadsController {
     return this.leadsService.update(id, dto, user);
   }
 
-  @Roles(UserRole.ADMIN, UserRole.SALES)
+  @Roles(UserRole.ADMIN)
   @Delete(':id')
   remove(
     @Param('id') id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.leadsService.remove(id, user);
+  }
+
+  @Roles(UserRole.ADMIN)
+  @Patch(':id/restore')
+  restore(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.leadsService.restore(id, user);
   }
 }

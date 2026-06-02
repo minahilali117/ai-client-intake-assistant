@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { auth } from '@/auth';
 import { ActivityTimeline } from '@/components/activity/activity-timeline';
+import { OfflineState } from '@/components/errors/offline-state';
 import { ProposalForm } from '@/components/proposals/proposal-form';
 import { ExportPdfButton } from '@/components/proposals/export-pdf-button';
-import { apiFetch } from '@/lib/api-server';
+import { apiFetch, isApiRequestError } from '@/lib/api-server';
 import type { ActivityLog, Proposal } from '@/types/crm';
 
 interface PageProps {
@@ -16,13 +17,22 @@ export default async function ProposalPage({ params }: PageProps) {
   const role = session!.user.role;
   const canEdit = role === 'ADMIN' || role === 'SALES';
 
-  const [proposal, activity] = await Promise.all([
-    apiFetch<Proposal>(`/proposals/${id}`, session!.accessToken),
-    apiFetch<ActivityLog[]>(
-      `/activity/proposal/${id}?limit=20`,
-      session!.accessToken,
-    ).catch(() => [] as ActivityLog[]),
-  ]);
+  let proposal: Proposal;
+  let activity: ActivityLog[];
+  try {
+    [proposal, activity] = await Promise.all([
+      apiFetch<Proposal>(`/proposals/${id}`, session!.accessToken),
+      apiFetch<ActivityLog[]>(
+        `/activity/proposal/${id}?limit=20`,
+        session!.accessToken,
+      ).catch(() => [] as ActivityLog[]),
+    ]);
+  } catch (error) {
+    if (isApiRequestError(error) && error.code === 'NETWORK_ERROR') {
+      return <OfflineState />;
+    }
+    throw error;
+  }
 
   return (
     <div className="space-y-6">

@@ -9,9 +9,11 @@ import { ActivityAction, LeadStatus, UserRole } from '@prisma/client';
 import { AuthenticatedUser } from '../../common/types/authenticated-user.type';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ActivityLogsService } from '../activity-logs/activity-logs.service';
+import { normalizeAiText } from '../ai/normalize-ai-text';
 import {
   PROPOSAL_GENERATOR,
   ProposalGenerationInput,
+  ProposalGenerationResult,
   ProposalGenerator,
 } from '../ai/proposal-generator.interface';
 import { UpdateProposalDto } from './dto/update-proposal.dto';
@@ -70,9 +72,12 @@ export class ProposalsService {
       technicalNotes: inquiry.technicalNotes,
     };
 
-    const generated = await this.proposalGenerator.generate(input);
-    const usedOpenAI = Boolean(
-      this.configService.get<string>('OPENAI_API_KEY')?.trim(),
+    const generated = this.normalizeGenerated(
+      await this.proposalGenerator.generate(input),
+    );
+    const usedAiProvider = Boolean(
+      this.configService.get<string>('OPENAI_API_KEY')?.trim() ||
+        this.configService.get<string>('GROQ_API_KEY')?.trim(),
     );
 
     const proposal = inquiry.proposal
@@ -80,7 +85,7 @@ export class ProposalsService {
           where: { id: inquiry.proposal.id },
           data: {
             ...generated,
-            generatedByAI: usedOpenAI,
+            generatedByAI: usedAiProvider,
             deletedAt: null,
           },
           include: proposalInclude,
@@ -90,7 +95,7 @@ export class ProposalsService {
             inquiryId: inquiry.id,
             leadId: inquiry.leadId,
             ...generated,
-            generatedByAI: usedOpenAI,
+            generatedByAI: usedAiProvider,
           },
           include: proposalInclude,
         });
@@ -107,7 +112,7 @@ export class ProposalsService {
       proposal.id,
       {
         inquiryId,
-        generatedByAI: usedOpenAI,
+        generatedByAI: usedAiProvider,
         newValue: { projectTitle: inquiry.projectTitle },
       },
     );
@@ -181,6 +186,31 @@ export class ProposalsService {
     if (user.role === UserRole.DEVELOPER) {
       throw new ForbiddenException('Developers cannot manage proposals');
     }
+  }
+
+  private normalizeGenerated(
+    generated: ProposalGenerationResult,
+  ): ProposalGenerationResult {
+    const clean = (value: string) => {
+      const normalized = normalizeAiText(value);
+      if (normalized) {
+        return normalized;
+      }
+      const trimmed = value.trim();
+      if (trimmed && trimmed !== '[object Object]') {
+        return trimmed;
+      }
+      return value;
+    };
+
+    return {
+      projectSummary: clean(generated.projectSummary),
+      suggestedFeatures: clean(generated.suggestedFeatures),
+      technicalApproach: clean(generated.technicalApproach),
+      estimatedComplexity: clean(generated.estimatedComplexity),
+      suggestedTimeline: clean(generated.suggestedTimeline),
+      questionsToAsk: clean(generated.questionsToAsk),
+    };
   }
 
   private assertCanViewProposal(status: LeadStatus, user: AuthenticatedUser) {

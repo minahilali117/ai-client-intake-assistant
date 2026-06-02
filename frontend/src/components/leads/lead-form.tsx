@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { apiClient } from '@/lib/api-client';
 import { LEAD_STATUSES, LEAD_STATUS_LABELS } from '@/lib/labels';
 import type { Lead, LeadStatus } from '@/types/crm';
@@ -33,6 +34,7 @@ export function LeadForm({ accessToken, lead }: LeadFormProps) {
     try {
       if (lead) {
         await apiClient.patch(`/leads/${lead.id}`, accessToken, payload);
+        toast.success('Lead updated');
         router.push(`/dashboard/leads/${lead.id}`);
       } else {
         const created = await apiClient.post<Lead>(
@@ -40,11 +42,14 @@ export function LeadForm({ accessToken, lead }: LeadFormProps) {
           accessToken,
           payload,
         );
+        toast.success('Lead created');
         router.push(`/dashboard/leads/${created.id}`);
       }
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Save failed');
+      const message = err instanceof Error ? err.message : 'Save failed';
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }

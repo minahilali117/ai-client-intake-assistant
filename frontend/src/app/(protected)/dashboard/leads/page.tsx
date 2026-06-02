@@ -1,10 +1,16 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { auth } from '@/auth';
+import { OfflineState } from '@/components/errors/offline-state';
 import { LeadsFilters } from '@/components/leads/leads-filters';
 import { Pagination } from '@/components/leads/pagination';
 import { LeadStatusBadge } from '@/components/ui/status-badge';
-import { apiFetch, buildQuery, type PaginatedResponse } from '@/lib/api-server';
+import {
+  apiFetch,
+  buildQuery,
+  isApiRequestError,
+  type PaginatedResponse,
+} from '@/lib/api-server';
 import { LEAD_STATUS_LABELS } from '@/lib/labels';
 import type { Lead, LeadStatus } from '@/types/crm';
 
@@ -28,10 +34,18 @@ export default async function LeadsPage({ searchParams }: PageProps) {
     sortOrder: params.sortOrder ?? 'desc',
   });
 
-  const result = await apiFetch<PaginatedResponse<Lead>>(
-    `/leads${query}`,
-    session!.accessToken,
-  );
+  let result: PaginatedResponse<Lead>;
+  try {
+    result = await apiFetch<PaginatedResponse<Lead>>(
+      `/leads${query}`,
+      session!.accessToken,
+    );
+  } catch (error) {
+    if (isApiRequestError(error) && error.code === 'NETWORK_ERROR') {
+      return <OfflineState />;
+    }
+    throw error;
+  }
 
   const canCreate =
     session!.user.role === 'ADMIN' || session!.user.role === 'SALES';

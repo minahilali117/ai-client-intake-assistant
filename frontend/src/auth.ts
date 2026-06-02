@@ -1,9 +1,14 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
-import { apiLogin, apiRefresh } from '@/lib/api';
+import {
+  apiLogin,
+  apiRefresh,
+  type AuthApiResponse,
+} from '@/lib/api';
 import type { AppRole } from '@/types/next-auth';
 
 const ACCESS_TOKEN_TTL_MS = 14 * 60 * 1000;
+let refreshPromise: Promise<AuthApiResponse> | null = null;
 
 const authSecret =
   process.env.AUTH_SECRET ??
@@ -82,11 +87,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
 
       try {
-        const refreshed = await apiRefresh(token.refreshToken as string);
+        if (!refreshPromise) {
+          console.log('STARTING REFRESH REQUEST');
+
+          refreshPromise = apiRefresh(
+            token.refreshToken as string,
+          ).finally(() => {
+            console.log('REFRESH COMPLETE');
+            refreshPromise = null;
+          });
+        } else {
+          console.log('WAITING FOR EXISTING REFRESH');
+        }
+
+        const refreshed = await refreshPromise;
+
         token.accessToken = refreshed.accessToken;
         token.refreshToken = refreshed.refreshToken;
         token.role = refreshed.user.role;
-        token.accessTokenExpires = Date.now() + ACCESS_TOKEN_TTL_MS;
+        token.accessTokenExpires =
+          Date.now() + ACCESS_TOKEN_TTL_MS;
       } catch {
         return { ...token, error: 'RefreshAccessTokenError' };
       }

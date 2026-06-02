@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { LogoutButton } from '@/components/auth/logout-button';
+import { AppErrorBoundary } from '@/components/errors/app-error-boundary';
 
 export default async function DashboardLayout({
   children,
@@ -29,6 +30,11 @@ export default async function DashboardLayout({
               <Link href="/dashboard/leads" className="text-slate-600 hover:text-slate-900">
                 Leads
               </Link>
+              {session.user.role === 'ADMIN' && (
+                <Link href="/dashboard/users" className="text-slate-600 hover:text-slate-900">
+                  Users
+                </Link>
+              )}
               <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium uppercase tracking-wide text-slate-700">
                 {session.user.role}
               </span>
@@ -40,7 +46,9 @@ export default async function DashboardLayout({
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-6 py-8">{children}</main>
+      <main className="mx-auto max-w-6xl px-6 py-8">
+        <AppErrorBoundary>{children}</AppErrorBoundary>
+      </main>
     </div>
   );
 }

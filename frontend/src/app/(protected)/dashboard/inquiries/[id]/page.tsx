@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { auth } from '@/auth';
 import { ActivityTimeline } from '@/components/activity/activity-timeline';
+import { OfflineState } from '@/components/errors/offline-state';
 import { InquiryForm } from '@/components/inquiries/inquiry-form';
 import { TechnicalNotesForm } from '@/components/inquiries/technical-notes-form';
 import {
@@ -8,7 +9,7 @@ import {
   type AttachmentItem,
 } from '@/components/files/attachment-panel';
 import { PriorityBadge } from '@/components/ui/status-badge';
-import { apiFetch } from '@/lib/api-server';
+import { apiFetch, isApiRequestError } from '@/lib/api-server';
 import {
   LEAD_STATUS_LABELS,
   PRIORITY_LABELS,
@@ -32,20 +33,31 @@ export default async function InquiryDetailPage({ params }: PageProps) {
   const { id } = await params;
   const role = session!.user.role;
 
-  const [inquiry, activity, proposal, attachments] = await Promise.all([
-    apiFetch<Inquiry>(`/inquiries/${id}`, session!.accessToken),
-    apiFetch<ActivityLog[]>(
-      `/activity/inquiry/${id}?limit=20`,
-      session!.accessToken,
-    ),
-    apiFetch<Proposal>(`/proposals/by-inquiry/${id}`, session!.accessToken).catch(
-      () => null,
-    ),
-    apiFetch<AttachmentItem[]>(
-      `/files/inquiry/${id}`,
-      session!.accessToken,
-    ).catch(() => [] as AttachmentItem[]),
-  ]);
+  let inquiry: Inquiry;
+  let activity: ActivityLog[];
+  let proposal: Proposal | null;
+  let attachments: AttachmentItem[];
+  try {
+    [inquiry, activity, proposal, attachments] = await Promise.all([
+      apiFetch<Inquiry>(`/inquiries/${id}`, session!.accessToken),
+      apiFetch<ActivityLog[]>(
+        `/activity/inquiry/${id}?limit=20`,
+        session!.accessToken,
+      ),
+      apiFetch<Proposal>(`/proposals/by-inquiry/${id}`, session!.accessToken).catch(
+        () => null,
+      ),
+      apiFetch<AttachmentItem[]>(
+        `/files/inquiry/${id}`,
+        session!.accessToken,
+      ).catch(() => [] as AttachmentItem[]),
+    ]);
+  } catch (error) {
+    if (isApiRequestError(error) && error.code === 'NETWORK_ERROR') {
+      return <OfflineState />;
+    }
+    throw error;
+  }
 
   const canManage = role === 'ADMIN' || role === 'SALES';
   const canEditNotes =

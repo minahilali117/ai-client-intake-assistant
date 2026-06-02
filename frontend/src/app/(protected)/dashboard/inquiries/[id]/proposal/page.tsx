@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { auth } from '@/auth';
+import { OfflineState } from '@/components/errors/offline-state';
 import { GenerateProposalButton } from '@/components/proposals/generate-proposal-button';
-import { apiFetch } from '@/lib/api-server';
+import { apiFetch, isApiRequestError } from '@/lib/api-server';
 import type { Inquiry, Proposal } from '@/types/crm';
 
 interface PageProps {
@@ -18,10 +19,15 @@ export default async function InquiryProposalPage({ params }: PageProps) {
     redirect(`/dashboard/inquiries/${id}`);
   }
 
-  const inquiry = await apiFetch<Inquiry>(
-    `/inquiries/${id}`,
-    session!.accessToken,
-  );
+  let inquiry: Inquiry;
+  try {
+    inquiry = await apiFetch<Inquiry>(`/inquiries/${id}`, session!.accessToken);
+  } catch (error) {
+    if (isApiRequestError(error) && error.code === 'NETWORK_ERROR') {
+      return <OfflineState />;
+    }
+    throw error;
+  }
 
   let existingProposal: Proposal | null = null;
   try {

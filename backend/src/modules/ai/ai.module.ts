@@ -15,8 +15,11 @@ import { OpenAIProposalGenerator } from './openai-proposal.generator';
         openaiGenerator: OpenAIProposalGenerator,
         mockGenerator: MockProposalGenerator,
       ) => {
-        const apiKey = configService.get<string>('OPENAI_API_KEY');
-        return apiKey?.trim() ? openaiGenerator : mockGenerator;
+        const openAiApiKey = configService.get<string>('OPENAI_API_KEY');
+        const groqApiKey = configService.get<string>('GROQ_API_KEY');
+        return openAiApiKey?.trim() || groqApiKey?.trim()
+          ? openaiGenerator
+          : mockGenerator;
       },
       inject: [ConfigService, OpenAIProposalGenerator, MockProposalGenerator],
     },

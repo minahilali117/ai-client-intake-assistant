@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { OfflineProvider } from '@/components/providers/offline-provider';
+import { Toaster } from 'sonner';
 
 export const metadata: Metadata = {
   title: 'Client Intake & Proposal Assistant',
@@ -15,7 +17,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body suppressHydrationWarning>
-        {children}
+        <OfflineProvider>{children}</OfflineProvider>
+        <Toaster richColors position="top-right" />
       </body>
     </html>
   );

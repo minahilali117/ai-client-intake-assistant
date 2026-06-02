@@ -50,7 +50,7 @@ export function GenerateProposalButton({
         {loading ? 'Generating...' : 'Generate proposal brief'}
       </button>
       <p className="mt-2 text-xs text-slate-500">
-        Uses OpenAI when configured; otherwise the local mock generator.
+        Uses OpenAI or Groq when configured; otherwise the local mock generator.
       </p>
     </div>
   );

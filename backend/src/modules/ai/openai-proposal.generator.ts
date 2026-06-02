@@ -6,6 +6,7 @@ import {
   ProposalGenerator,
 } from './proposal-generator.interface';
 import { MockProposalGenerator } from './mock-proposal.generator';
+import { normalizeAiText } from './normalize-ai-text';
 
 interface OpenAIChatResponse {
   choices?: Array<{
@@ -23,15 +24,24 @@ export class OpenAIProposalGenerator implements ProposalGenerator {
   async generate(
     input: ProposalGenerationInput,
   ): Promise<ProposalGenerationResult> {
-    const apiKey = this.configService.get<string>('OPENAI_API_KEY');
+    const openAiApiKey = this.configService.get<string>('OPENAI_API_KEY')?.trim();
+    const groqApiKey = this.configService.get<string>('GROQ_API_KEY')?.trim();
+    const provider = openAiApiKey ? 'openai' : groqApiKey ? 'groq' : null;
+    const apiKey = provider === 'openai' ? openAiApiKey : groqApiKey;
     const model =
-      this.configService.get<string>('OPENAI_MODEL') ?? 'gpt-4o-mini';
+      provider === 'openai'
+        ? (this.configService.get<string>('OPENAI_MODEL') ?? 'gpt-4o-mini')
+        : (this.configService.get<string>('GROQ_MODEL') ?? 'llama-3.1-8b-instant');
+    const endpoint =
+      provider === 'openai'
+        ? 'https://api.openai.com/v1/chat/completions'
+        : 'https://api.groq.com/openai/v1/chat/completions';
 
-    if (!apiKey) {
+    if (!apiKey || !provider) {
       return this.fallback.generate(input);
     }
 
-    const systemPrompt = `You are a senior solutions consultant. Return ONLY valid JSON with keys: projectSummary, suggestedFeatures, technicalApproach, estimatedComplexity, suggestedTimeline, questionsToAsk. Use newline-separated bullet lists for suggestedFeatures and questionsToAsk.`;
+    const systemPrompt = `You are a senior solutions consultant. Return ONLY valid JSON with keys: projectSummary, suggestedFeatures, technicalApproach, estimatedComplexity, suggestedTimeline, questionsToAsk. Every value MUST be a plain string (never an object or array). For suggestedFeatures and questionsToAsk, use one string with newline-separated bullet points (e.g. "- Feature one\\n- Feature two"). projectSummary must be 2-4 sentences of prose.`;
 
     const userPrompt = JSON.stringify({
       client: input.companyName,
@@ -46,7 +56,7 @@ export class OpenAIProposalGenerator implements ProposalGenerator {
 
     try {
       const response = await fetch(
-        'https://api.openai.com/v1/chat/completions',
+        endpoint,
         {
           method: 'POST',
           headers: {
@@ -67,7 +77,7 @@ export class OpenAIProposalGenerator implements ProposalGenerator {
 
       if (!response.ok) {
         this.logger.warn(
-          `OpenAI request failed (${response.status}), using mock generator`,
+          `${provider} request failed (${response.status}), using mock generator`,
         );
         return this.fallback.generate(input);
       }
@@ -79,24 +89,30 @@ export class OpenAIProposalGenerator implements ProposalGenerator {
         return this.fallback.generate(input);
       }
 
-      const parsed = JSON.parse(content) as Partial<ProposalGenerationResult>;
+      const parsed = JSON.parse(content) as Record<string, unknown>;
       const fallback = await this.fallback.generate(input);
 
       return {
-        projectSummary: parsed.projectSummary ?? fallback.projectSummary,
+        projectSummary:
+          normalizeAiText(parsed.projectSummary) ?? fallback.projectSummary,
         suggestedFeatures:
-          parsed.suggestedFeatures ?? fallback.suggestedFeatures,
+          normalizeAiText(parsed.suggestedFeatures) ??
+          fallback.suggestedFeatures,
         technicalApproach:
-          parsed.technicalApproach ?? fallback.technicalApproach,
+          normalizeAiText(parsed.technicalApproach) ??
+          fallback.technicalApproach,
         estimatedComplexity:
-          parsed.estimatedComplexity ?? fallback.estimatedComplexity,
+          normalizeAiText(parsed.estimatedComplexity) ??
+          fallback.estimatedComplexity,
         suggestedTimeline:
-          parsed.suggestedTimeline ?? fallback.suggestedTimeline,
-        questionsToAsk: parsed.questionsToAsk ?? fallback.questionsToAsk,
+          normalizeAiText(parsed.suggestedTimeline) ??
+          fallback.suggestedTimeline,
+        questionsToAsk:
+          normalizeAiText(parsed.questionsToAsk) ?? fallback.questionsToAsk,
       };
     } catch (error) {
       this.logger.warn(
-        `OpenAI error: ${error instanceof Error ? error.message : 'unknown'}`,
+        `${provider} error: ${error instanceof Error ? error.message : 'unknown'}`,
       );
       return this.fallback.generate(input);
     }

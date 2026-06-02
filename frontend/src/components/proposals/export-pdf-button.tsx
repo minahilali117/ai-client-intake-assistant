@@ -1,5 +1,6 @@
 'use client';
 
+import { toast } from 'sonner';
 import { getApiUrl } from '@/lib/api';
 
 export function ExportPdfButton({
@@ -10,25 +11,30 @@ export function ExportPdfButton({
   accessToken: string;
 }) {
   const handleExport = async () => {
-    const response = await fetch(
-      `${getApiUrl()}/proposals/${proposalId}/export`,
-      {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      },
-    );
+    try {
+      const response = await fetch(
+        `${getApiUrl()}/proposals/${proposalId}/export`,
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        },
+      );
 
-    if (!response.ok) {
-      alert('Failed to export PDF');
-      return;
+      if (!response.ok) {
+        toast.error('Failed to export PDF');
+        return;
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = 'proposal.pdf';
+      anchor.click();
+      URL.revokeObjectURL(url);
+      toast.success('PDF exported');
+    } catch {
+      toast.error('Failed to export PDF');
     }
-
-    const blob = await response.blob();
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = 'proposal.pdf';
-    anchor.click();
-    URL.revokeObjectURL(url);
   };
 
   return (

@@ -1,20 +1,44 @@
 import { getApiUrl } from './api';
 import type { PaginatedResponse } from '@/types/crm';
 
+export class ApiRequestError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+    public code: 'HTTP_ERROR' | 'NETWORK_ERROR',
+  ) {
+    super(message);
+    this.name = 'ApiRequestError';
+  }
+}
+
+export function isApiRequestError(error: unknown): error is ApiRequestError {
+  return error instanceof ApiRequestError;
+}
+
 export async function apiFetch<T>(
   path: string,
   accessToken: string,
   init?: RequestInit,
 ): Promise<T> {
-  const response = await fetch(`${getApiUrl()}${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...init?.headers,
-      Authorization: `Bearer ${accessToken}`,
-    },
-    cache: 'no-store',
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${getApiUrl()}${path}`, {
+      ...init,
+      headers: {
+        'Content-Type': 'application/json',
+        ...init?.headers,
+        Authorization: `Bearer ${accessToken}`,
+      },
+      cache: 'no-store',
+    });
+  } catch {
+    throw new ApiRequestError(
+      'Service temporarily unavailable. Please try again in a moment.',
+      0,
+      'NETWORK_ERROR',
+    );
+  }
 
   const data = await response.json().catch(() => ({}));
 
@@ -25,7 +49,7 @@ export async function apiFetch<T>(
         : Array.isArray(data.message)
           ? data.message.join(', ')
           : response.statusText;
-    throw new Error(message);
+    throw new ApiRequestError(message, response.status, 'HTTP_ERROR');
   }
 
   return data as T;

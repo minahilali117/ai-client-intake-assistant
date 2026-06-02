@@ -108,3 +108,12 @@ export interface DashboardSummary {
   leadsByProjectType: Array<{ projectType: ProjectType; count: number }>;
   recentActivity: ActivityLog[];
 }
+
+export interface AppUser {
+  id: string;
+  name: string;
+  email: string;
+  role: 'ADMIN' | 'SALES' | 'DEVELOPER';
+  createdAt: string;
+  updatedAt: string;
+}

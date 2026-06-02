@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { apiClient } from '@/lib/api-client';
 import type { Proposal } from '@/types/crm';
 
@@ -37,9 +38,12 @@ export function ProposalForm({
 
     try {
       await apiClient.patch(`/proposals/${proposal.id}`, accessToken, payload);
+      toast.success('Proposal saved');
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Save failed');
+      const message = err instanceof Error ? err.message : 'Save failed';
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }

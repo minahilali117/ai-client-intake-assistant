@@ -3,16 +3,26 @@ import { auth } from '@/auth';
 import { ActivityTimeline } from '@/components/activity/activity-timeline';
 import { BarChart } from '@/components/dashboard/bar-chart';
 import { SummaryCards } from '@/components/dashboard/summary-cards';
-import { apiFetch } from '@/lib/api-server';
+import { OfflineState } from '@/components/errors/offline-state';
+import { apiFetch, isApiRequestError } from '@/lib/api-server';
 import { LEAD_STATUS_LABELS, PROJECT_TYPE_LABELS } from '@/lib/labels';
 import type { DashboardSummary, LeadStatus, ProjectType } from '@/types/crm';
+import { notFound } from 'next/navigation';
 
 export default async function DashboardPage() {
   const session = await auth();
-  const summary = await apiFetch<DashboardSummary>(
-    '/dashboard/summary',
-    session!.accessToken,
-  );
+  let summary: DashboardSummary;
+  try {
+    summary = await apiFetch<DashboardSummary>('/dashboard/summary', session!.accessToken);
+  } catch (error) {
+    if (isApiRequestError(error) && error.status === 404) {
+      notFound();
+    }
+    if (isApiRequestError(error) && error.code === 'NETWORK_ERROR') {
+      return <OfflineState />;
+    }
+    throw error;
+  }
 
   const statusChart = summary.leadsByStatus.map((row) => ({
     label: LEAD_STATUS_LABELS[row.status as LeadStatus],

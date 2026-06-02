@@ -1,8 +1,10 @@
 import Link from 'next/link';
 import { auth } from '@/auth';
 import { ActivityTimeline } from '@/components/activity/activity-timeline';
+import { OfflineState } from '@/components/errors/offline-state';
+import { DeleteLeadButton } from '@/components/leads/delete-lead-button';
 import { LeadStatusBadge } from '@/components/ui/status-badge';
-import { apiFetch } from '@/lib/api-server';
+import { apiFetch, isApiRequestError } from '@/lib/api-server';
 import { LEAD_STATUS_LABELS, PROJECT_TYPE_LABELS, PRIORITY_LABELS } from '@/lib/labels';
 import type { ActivityLog, Inquiry, Lead, LeadStatus, Priority, ProjectType } from '@/types/crm';
 
@@ -15,15 +17,25 @@ export default async function LeadDetailPage({ params }: PageProps) {
   const { id } = await params;
   const role = session!.user.role;
 
-  const [lead, activity] = await Promise.all([
-    apiFetch<Lead>(`/leads/${id}`, session!.accessToken),
-    apiFetch<ActivityLog[]>(
-      `/activity/lead/${id}?limit=20`,
-      session!.accessToken,
-    ),
-  ]);
+  let lead: Lead;
+  let activity: ActivityLog[];
+  try {
+    [lead, activity] = await Promise.all([
+      apiFetch<Lead>(`/leads/${id}`, session!.accessToken),
+      apiFetch<ActivityLog[]>(
+        `/activity/lead/${id}?limit=20`,
+        session!.accessToken,
+      ),
+    ]);
+  } catch (error) {
+    if (isApiRequestError(error) && error.code === 'NETWORK_ERROR') {
+      return <OfflineState />;
+    }
+    throw error;
+  }
 
   const canManage = role === 'ADMIN' || role === 'SALES';
+  const canDelete = role === 'ADMIN';
 
   return (
     <div className="space-y-6">
@@ -49,6 +61,9 @@ export default async function LeadDetailPage({ params }: PageProps) {
             >
               Edit
             </Link>
+          )}
+          {canDelete && (
+            <DeleteLeadButton leadId={id} accessToken={session!.accessToken} />
           )}
         </div>
       </div>

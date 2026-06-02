@@ -97,7 +97,7 @@ export class LeadsService {
     };
   }
 
-  async findOne(id: string, user: AuthenticatedUser) {
+  async findOne(id: string, _user: AuthenticatedUser) {
     const lead = await this.prisma.lead.findFirst({
       where: { id, deletedAt: null },
       include: {
@@ -113,7 +113,6 @@ export class LeadsService {
       throw new NotFoundException('Lead not found');
     }
 
-    this.assertCanViewLead(lead.status, user);
     return lead;
   }
 
@@ -183,15 +182,29 @@ export class LeadsService {
     });
   }
 
+  async restore(id: string, user: AuthenticatedUser) {
+    this.assertCanManageLeads(user);
+    const lead = await this.prisma.lead.findFirst({
+      where: { id, deletedAt: { not: null } },
+    });
+    if (!lead) {
+      throw new NotFoundException('Deleted lead not found');
+    }
+
+    return this.prisma.lead.update({
+      where: { id },
+      data: { deletedAt: null },
+      include: leadInclude,
+    });
+  }
+
   private buildWhere(
     query: QueryLeadsDto,
-    user: AuthenticatedUser,
+    _user: AuthenticatedUser,
   ): Prisma.LeadWhereInput {
     const where: Prisma.LeadWhereInput = { deletedAt: null };
 
-    if (user.role === UserRole.DEVELOPER) {
-      where.status = LeadStatus.QUALIFIED;
-    } else if (query.status) {
+    if (query.status) {
       where.status = query.status;
     }
 
@@ -221,19 +234,9 @@ export class LeadsService {
   }
 
   private assertCanManageLeads(user: AuthenticatedUser) {
-    if (user.role === UserRole.DEVELOPER) {
+    if (user.role !== UserRole.ADMIN && user.role !== UserRole.SALES) {
       throw new ForbiddenException('Developers cannot manage leads');
     }
   }
 
-  private assertCanViewLead(status: LeadStatus, user: AuthenticatedUser) {
-    if (
-      user.role === UserRole.DEVELOPER &&
-      status !== LeadStatus.QUALIFIED
-    ) {
-      throw new ForbiddenException(
-        'Developers can only view qualified leads',
-      );
-    }
-  }
 }

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { LeadStatus, UserRole } from '@prisma/client';
+import { LeadStatus } from '@prisma/client';
 import { AuthenticatedUser } from '../../common/types/authenticated-user.type';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ActivityLogsService } from '../activity-logs/activity-logs.service';
@@ -12,10 +12,7 @@ export class DashboardService {
   ) {}
 
   async getSummary(user: AuthenticatedUser) {
-    const leadWhere =
-      user.role === UserRole.DEVELOPER
-        ? { deletedAt: null, status: LeadStatus.QUALIFIED }
-        : { deletedAt: null };
+    const leadWhere = { deletedAt: null };
 
     const [
       totalLeads,
