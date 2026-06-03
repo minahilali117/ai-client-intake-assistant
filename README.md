@@ -109,6 +109,7 @@ docker compose up --build
 | `OTEL_ENABLED` | Set `true` to enable OpenTelemetry |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | OTLP trace endpoint |
 | `NEXTAUTH_SECRET` / `AUTH_SECRET` | Auth.js encryption (frontend `.env.local`) |
+| `INTERNAL_API_URL` | Backend URL used by the frontend container/server |
 | `NEXT_PUBLIC_API_URL` | Public API URL for browser |
 
 ## Seed credentials

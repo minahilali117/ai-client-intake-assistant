@@ -1,6 +1,7 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import {
+  ApiError,
   apiLogin,
   apiRefresh,
   type AuthApiResponse,
@@ -56,6 +57,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           refreshToken: result.refreshToken,
           };
         } catch (error) {
+          if (error instanceof ApiError && error.status === 401) {
+            return null;
+          }
+
           const message =
             error instanceof Error ? error.message : 'Authentication failed';
           throw new Error(message);

@@ -5,7 +5,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ActivityAction, LeadStatus, UserRole } from '@prisma/client';
-import { createReadStream, existsSync, mkdirSync, writeFileSync } from 'fs';
+import { createReadStream, existsSync } from 'fs';
+import { mkdir, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
 import { AuthenticatedUser } from '../../common/types/authenticated-user.type';
@@ -17,13 +18,14 @@ import { ALLOWED_MIME_TYPES, MAX_FILE_SIZE_BYTES } from './files.constants';
 export class FilesService {
   private readonly uploadDir = join(process.cwd(), 'uploads');
 
+  // After
   constructor(
     private prisma: PrismaService,
     private activityLogs: ActivityLogsService,
   ) {
-    if (!existsSync(this.uploadDir)) {
-      mkdirSync(this.uploadDir, { recursive: true });
-    }
+    mkdir(this.uploadDir, { recursive: true }).catch((err) => {
+      console.error('Failed to create upload directory:', err);
+    });
   }
 
   async upload(
@@ -48,7 +50,7 @@ export class FilesService {
 
     const storedName = `${randomUUID()}-${file.originalname}`;
     const filePath = join(this.uploadDir, storedName);
-    writeFileSync(filePath, file.buffer);
+    await writeFile(filePath, file.buffer);
 
     const attachment = await this.prisma.attachment.create({
       data: {

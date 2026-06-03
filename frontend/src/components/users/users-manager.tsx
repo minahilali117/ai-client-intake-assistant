@@ -192,8 +192,7 @@ export function UsersManager({
 
                         <AlertDialogDescription>
                           This will permanently delete{' '}
-                          <strong>{user.name}</strong>'s account and cannot be
-                          undone.
+                          <strong>{user.name}</strong>&apos;s account and cannot be undone.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
 
