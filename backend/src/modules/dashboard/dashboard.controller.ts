@@ -12,7 +12,6 @@ import { DashboardService } from './dashboard.service';
 export class DashboardController {
   constructor(private dashboardService: DashboardService) {}
 
-  @Roles(UserRole.ADMIN, UserRole.SALES, UserRole.DEVELOPER)
   @Get('summary')
   getSummary(@CurrentUser() user: AuthenticatedUser) {
     return this.dashboardService.getSummary(user);

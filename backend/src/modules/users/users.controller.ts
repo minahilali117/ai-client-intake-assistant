@@ -25,6 +25,7 @@ export class UsersController {
 
   @Get('me')
   getProfile(@CurrentUser() user: AuthenticatedUser) {
+    //protect using jwt auth guard and return current user info
     return user;
   }
 

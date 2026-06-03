@@ -15,6 +15,8 @@ import { AiModule } from './modules/ai/ai.module';
 import { ProposalsModule } from './modules/proposals/proposals.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { FilesModule } from './modules/files/files.module';
+import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { RolesGuard } from './common/guards/roles.guard';
 
 @Module({
   imports: [
@@ -45,6 +47,17 @@ import { FilesModule } from './modules/files/files.module';
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
+
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
+
     {
       provide: APP_INTERCEPTOR,
       useClass: LoggingInterceptor,

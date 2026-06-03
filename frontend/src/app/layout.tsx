@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { AuthSyncProvider } from '@/components/providers/auth-sync-provider';
 import { OfflineProvider } from '@/components/providers/offline-provider';
+import { AppSessionProvider } from '@/components/providers/session-provider';
 import { Toaster } from 'sonner';
 
 export const metadata: Metadata = {
@@ -17,7 +19,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body suppressHydrationWarning>
-        <OfflineProvider>{children}</OfflineProvider>
+        <AppSessionProvider>
+          <AuthSyncProvider>
+            <OfflineProvider>{children}</OfflineProvider>
+          </AuthSyncProvider>
+        </AppSessionProvider>
         <Toaster richColors position="top-right" />
       </body>
     </html>

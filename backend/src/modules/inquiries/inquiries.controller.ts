@@ -34,7 +34,6 @@ export class InquiriesController {
     return this.inquiriesService.create(dto, user);
   }
 
-  @Roles(UserRole.ADMIN, UserRole.SALES, UserRole.DEVELOPER)
   @Get()
   findAll(
     @Query() query: QueryInquiriesDto,
@@ -43,7 +42,6 @@ export class InquiriesController {
     return this.inquiriesService.findAll(query, user);
   }
 
-  @Roles(UserRole.ADMIN, UserRole.SALES, UserRole.DEVELOPER)
   @Get(':id')
   findOne(
     @Param('id') id: string,
@@ -62,7 +60,6 @@ export class InquiriesController {
     return this.inquiriesService.update(id, dto, user);
   }
 
-  @Roles(UserRole.ADMIN, UserRole.SALES, UserRole.DEVELOPER)
   @Patch(':id/technical-notes')
   updateTechnicalNotes(
     @Param('id') id: string,

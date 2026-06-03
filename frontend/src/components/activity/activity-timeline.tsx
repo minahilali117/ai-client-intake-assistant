@@ -1,3 +1,4 @@
+import { ActivityMetadataDisplay } from '@/components/activity/activity-metadata-display';
 import type { ActivityLog } from '@/types/crm';
 
 const actionLabels: Record<string, string> = {
@@ -27,9 +28,7 @@ export function ActivityTimeline({ logs }: { logs: ActivityLog[] }) {
             {log.user.name} · {new Date(log.createdAt).toLocaleString()}
           </p>
           {log.metadata && Object.keys(log.metadata).length > 0 && (
-            <pre className="mt-2 overflow-x-auto rounded bg-slate-50 p-2 text-xs text-slate-600">
-              {JSON.stringify(log.metadata, null, 2)}
-            </pre>
+            <ActivityMetadataDisplay metadata={log.metadata} />
           )}
         </li>
       ))}

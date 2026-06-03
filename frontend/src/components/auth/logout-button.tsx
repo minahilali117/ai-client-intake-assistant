@@ -2,6 +2,7 @@
 
 import { signOut } from 'next-auth/react';
 import { apiLogout } from '@/lib/api';
+import { broadcastAuthSync } from '@/lib/auth-sync';
 
 interface LogoutButtonProps {
   accessToken: string;
@@ -9,11 +10,14 @@ interface LogoutButtonProps {
 
 export function LogoutButton({ accessToken }: LogoutButtonProps) {
   const handleLogout = async () => {
+    broadcastAuthSync({ type: 'logout' });
+
     try {
       await apiLogout(accessToken);
     } catch {
       // Continue local sign-out even if API logout fails
     }
+
     await signOut({ callbackUrl: '/login' });
   };
 

@@ -42,7 +42,6 @@ export class ProposalsController {
     return this.proposalsService.generate(dto.inquiryId, user);
   }
 
-  @Roles(UserRole.ADMIN, UserRole.SALES, UserRole.DEVELOPER)
   @Get('by-inquiry/:inquiryId')
   findByInquiry(
     @Param('inquiryId') inquiryId: string,
@@ -51,7 +50,6 @@ export class ProposalsController {
     return this.proposalsService.findByInquiry(inquiryId, user);
   }
 
-  @Roles(UserRole.ADMIN, UserRole.SALES, UserRole.DEVELOPER)
   @Get(':id/export')
   @ApiOperation({ summary: 'Export proposal as PDF' })
   @ApiProduces('application/pdf')
@@ -67,7 +65,6 @@ export class ProposalsController {
     stream.pipe(res);
   }
 
-  @Roles(UserRole.ADMIN, UserRole.SALES, UserRole.DEVELOPER)
   @Get(':id')
   @ApiOperation({ summary: 'Get proposal by ID' })
   findOne(

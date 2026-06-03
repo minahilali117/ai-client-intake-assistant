@@ -60,7 +60,6 @@ export class FilesController {
     return this.filesService.upload(dto.inquiryId, file, user);
   }
 
-  @Roles(UserRole.ADMIN, UserRole.SALES, UserRole.DEVELOPER)
   @Get('inquiry/:inquiryId')
   @ApiOperation({ summary: 'List attachments for an inquiry' })
   listByInquiry(
@@ -70,7 +69,6 @@ export class FilesController {
     return this.filesService.listByInquiry(inquiryId, user);
   }
 
-  @Roles(UserRole.ADMIN, UserRole.SALES, UserRole.DEVELOPER)
   @Get(':id/download')
   @ApiOperation({ summary: 'Download attachment' })
   async download(

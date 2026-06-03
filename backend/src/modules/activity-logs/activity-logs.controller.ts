@@ -10,14 +10,12 @@ import { ActivityLogsService } from './activity-logs.service';
 export class ActivityLogsController {
   constructor(private activityLogsService: ActivityLogsService) {}
 
-  @Roles(UserRole.ADMIN, UserRole.SALES, UserRole.DEVELOPER)
   @Get()
   findRecent(@Query('limit') limit?: string) {
     const parsed = limit ? Math.min(parseInt(limit, 10), 50) : 10;
     return this.activityLogsService.findRecent(parsed);
   }
 
-  @Roles(UserRole.ADMIN, UserRole.SALES, UserRole.DEVELOPER)
   @Get(':entityType/:entityId')
   findForEntity(
     @Param('entityType') entityType: string,

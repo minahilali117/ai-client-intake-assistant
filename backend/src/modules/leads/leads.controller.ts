@@ -33,7 +33,6 @@ export class LeadsController {
     return this.leadsService.create(dto, user);
   }
 
-  @Roles(UserRole.ADMIN, UserRole.SALES, UserRole.DEVELOPER)
   @Get()
   findAll(
     @Query() query: QueryLeadsDto,
@@ -42,7 +41,6 @@ export class LeadsController {
     return this.leadsService.findAll(query, user);
   }
 
-  @Roles(UserRole.ADMIN, UserRole.SALES, UserRole.DEVELOPER)
   @Get(':id')
   findOne(
     @Param('id') id: string,
