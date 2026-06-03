@@ -3,7 +3,6 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ActivityAction, LeadStatus, Prisma, UserRole } from '@prisma/client';
 import { PaginatedResult } from '../../common/types/paginated-result.type';
 import { AuthenticatedUser } from '../../common/types/authenticated-user.type';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -11,6 +10,8 @@ import { ActivityLogsService } from '../activity-logs/activity-logs.service';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { QueryLeadsDto } from './dto/query-leads.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
+import { ActivityAction, LeadStatus, Prisma, UserRole } from '@prisma/client';
+import { buildLeadWhereForUser } from '../../common/helpers/lead-where.helper';
 
 const leadInclude = {
   createdBy: { select: { id: true, name: true, email: true, role: true } },
@@ -200,16 +201,13 @@ export class LeadsService {
   }
 
   private buildWhere(query: QueryLeadsDto, user: AuthenticatedUser): Prisma.LeadWhereInput {
-    const where: Prisma.LeadWhereInput = { deletedAt: null };
+  const where: Prisma.LeadWhereInput = buildLeadWhereForUser(user);
 
-    if (user.role === UserRole.DEVELOPER) {
-      // Developers see no leads at all — return empty set
-      //where.id = { in: [] };
-      //Developers see only qualified leads
-      where.status = LeadStatus.QUALIFIED;
-    }
     if (query.status) {
-      where.status = query.status;
+      // Developers are already restricted to QUALIFIED; don't let them widen the filter
+      if (user.role !== UserRole.DEVELOPER) {
+        where.status = query.status;
+      }
     }
 
     if (query.source) {

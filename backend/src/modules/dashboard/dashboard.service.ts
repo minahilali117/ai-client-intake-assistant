@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { LeadStatus } from '@prisma/client';
 import { AuthenticatedUser } from '../../common/types/authenticated-user.type';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ActivityLogsService } from '../activity-logs/activity-logs.service';
+import { Prisma, LeadStatus, UserRole } from '@prisma/client';
+import { buildLeadWhereForUser } from '../../common/helpers/lead-where.helper';
 
 @Injectable()
 export class DashboardService {
@@ -12,7 +13,10 @@ export class DashboardService {
   ) {}
 
   async getSummary(user: AuthenticatedUser) {
-    const leadWhere = { deletedAt: null };
+    const leadWhere = buildLeadWhereForUser(user);
+
+    const activityWhere: Prisma.ActivityLogWhereInput =
+      user.role === UserRole.DEVELOPER ? { entityType: { not: 'lead' } } : {};
 
     const [
       totalLeads,
@@ -50,7 +54,7 @@ export class DashboardService {
         },
         _count: { projectType: true },
       }),
-      this.activityLogs.findRecent(15),
+      this.activityLogs.findRecent(15, activityWhere),
     ]);
 
     return {

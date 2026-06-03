@@ -45,8 +45,10 @@ export class ActivityLogsService {
     });
   }
 
-  async findRecent(limit = 10) {
+  // After
+  async findRecent(limit = 10, where: Prisma.ActivityLogWhereInput = {}) {
     return this.prisma.activityLog.findMany({
+      where,
       include: {
         user: { select: { id: true, name: true, email: true, role: true } },
       },
