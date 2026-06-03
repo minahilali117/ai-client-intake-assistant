@@ -1,5 +1,7 @@
+// After
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -13,8 +15,10 @@ import { UpdateUserDto } from './dto/update-user.dto';
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
+  // After
   async findAll() {
     return this.prisma.user.findMany({
+      where: { deactivatedAt: null },
       select: {
         id: true,
         name: true,
@@ -27,33 +31,55 @@ export class UsersService {
     });
   }
 
-  async findById(id: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
+// After
+async findById(id: string) {
+  const user = await this.prisma.user.findFirst({
+    where: { id, deactivatedAt: null },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
 
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    return user;
+  if (!user) {
+    throw new NotFoundException('User not found');
   }
 
+  return user;
+}
+
   async create(dto: CreateUserDto) {
-    const existing = await this.prisma.user.findUnique({
-      where: { email: dto.email.toLowerCase() },
-    });
-    if (existing) {
-      throw new ConflictException('Email already registered');
+  const existing = await this.prisma.user.findUnique({
+    where: { email: dto.email.toLowerCase() },
+  });
+
+  if (existing) {
+    if (existing.deactivatedAt !== null) {
+      // Reactivate the existing account instead of creating a duplicate
+      return this.prisma.user.update({
+        where: { id: existing.id },
+        data: {
+          name: dto.name,
+          passwordHash: await bcrypt.hash(dto.password, 12),
+          role: dto.role ?? UserRole.SALES,
+          deactivatedAt: null,
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
     }
+    throw new ConflictException('Email already registered');
+  }
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
     return this.prisma.user.create({
@@ -104,9 +130,33 @@ export class UsersService {
     });
   }
 
-  async remove(id: string) {
-    await this.findById(id);
-    await this.prisma.user.delete({ where: { id } });
-    return { message: 'User deleted' };
+// After
+async remove(id: string, requestingUserId: string) {
+  await this.findById(id);
+  await this.assertNotLastAdmin(id);
+
+  await this.prisma.user.update({
+    where: { id },
+    data: { deactivatedAt: new Date() },
+  });
+
+  return { message: 'User deactivated' };
+}
+
+private async assertNotLastAdmin(targetId: string) {
+  const target = await this.prisma.user.findUnique({
+    where: { id: targetId },
+    select: { role: true },
+  });
+
+  if (target?.role !== UserRole.ADMIN) return;
+
+  const activeAdminCount = await this.prisma.user.count({
+    where: { role: UserRole.ADMIN, deactivatedAt: null },
+  });
+
+  if (activeAdminCount <= 1) {
+    throw new ForbiddenException('Cannot deactivate the last admin account');
   }
+}
 }

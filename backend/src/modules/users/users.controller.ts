@@ -54,11 +54,12 @@ export class UsersController {
   }
 
   @Roles(UserRole.ADMIN)
+  // After
   @Delete(':id')
   remove(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     if (id === user.id) {
-      throw new ForbiddenException('You cannot delete your own account');
+      throw new ForbiddenException('You cannot deactivate your own account');
     }
-    return this.usersService.remove(id);
+    return this.usersService.remove(id, user.id);
   }
 }
