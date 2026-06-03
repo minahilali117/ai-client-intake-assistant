@@ -99,9 +99,10 @@ export class LeadsService {
   }
 
   async findOne(id: string, user: AuthenticatedUser) {
-    this.assertCanManageLeads(user);
+    const leadWhere = buildLeadWhereForUser(user);
+
     const lead = await this.prisma.lead.findFirst({
-      where: { id, deletedAt: null },
+      where: { ...leadWhere, id },
       include: {
         ...leadInclude,
         inquiries: {

@@ -86,7 +86,7 @@ export class FilesService {
   }
 
   async listByInquiry(inquiryId: string, user: AuthenticatedUser) {
-    await this.getInquiryForUpload(inquiryId, user);
+  await this.getInquiryForView(inquiryId, user);
     return this.prisma.attachment.findMany({
       where: { inquiryId },
       include: {
@@ -151,6 +151,21 @@ export class FilesService {
 
     return inquiry;
   }
+
+  private async getInquiryForView(inquiryId: string, user: AuthenticatedUser) {
+  const inquiry = await this.prisma.inquiry.findFirst({
+    where: { id: inquiryId, deletedAt: null },
+    include: { lead: true },
+  });
+
+  if (!inquiry) {
+    throw new NotFoundException('Inquiry not found');
+  }
+
+  this.assertCanViewInquiry(inquiry.lead.status, user);
+
+  return inquiry;
+}
 
   private assertCanUpload(user: AuthenticatedUser) {
     if (user.role === UserRole.DEVELOPER) {
