@@ -4,6 +4,10 @@ import { AuthSyncProvider } from '@/components/providers/auth-sync-provider';
 import { OfflineProvider } from '@/components/providers/offline-provider';
 import { AppSessionProvider } from '@/components/providers/session-provider';
 import { Toaster } from 'sonner';
+import { Geist } from "next/font/google";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
   title: 'Client Intake & Proposal Assistant',
@@ -17,7 +21,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={cn("font-sans", geist.variable)}>
       <body suppressHydrationWarning>
         <AppSessionProvider>
           <AuthSyncProvider>

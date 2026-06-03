@@ -97,7 +97,8 @@ export class LeadsService {
     };
   }
 
-  async findOne(id: string, _user: AuthenticatedUser) {
+  async findOne(id: string, user: AuthenticatedUser) {
+    this.assertCanManageLeads(user);
     const lead = await this.prisma.lead.findFirst({
       where: { id, deletedAt: null },
       include: {
@@ -198,12 +199,15 @@ export class LeadsService {
     });
   }
 
-  private buildWhere(
-    query: QueryLeadsDto,
-    _user: AuthenticatedUser,
-  ): Prisma.LeadWhereInput {
+  private buildWhere(query: QueryLeadsDto, user: AuthenticatedUser): Prisma.LeadWhereInput {
     const where: Prisma.LeadWhereInput = { deletedAt: null };
 
+    if (user.role === UserRole.DEVELOPER) {
+      // Developers see no leads at all — return empty set
+      //where.id = { in: [] };
+      //Developers see only qualified leads
+      where.status = LeadStatus.QUALIFIED;
+    }
     if (query.status) {
       where.status = query.status;
     }
